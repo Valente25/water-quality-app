@@ -1,0 +1,58 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Water Quality Classifier</title>
+  <meta charset="UTF-8">
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest"></script>
+</head>
+<body>
+  <h2>Check Water Quality</h2>
+  <p id="status">Loading model...</p>
+  <input type="file" accept="image/*" id="fileInput" disabled onchange="previewAndPredict(event)">
+  <br><br>
+  <img id="image" width="224" style="display:none;" />
+  <h3 id="label">Prediction: </h3>
+
+  <script>
+    const URL = "./";
+    let model, maxPredictions;
+
+    async function loadModel() {
+      try {
+        const modelURL = URL + "model.json";
+        const metadataURL = URL + "metadata.json";
+        model = await tmImage.load(modelURL, metadataURL);
+        maxPredictions = model.getTotalClasses();
+        document.getElementById("status").innerText = "Model loaded. You can upload an image.";
+        document.getElementById("fileInput").disabled = false;
+      } catch (err) {
+        document.getElementById("status").innerText = "Failed to load model.";
+        console.error(err);
+      }
+    }
+
+    async function previewAndPredict(event) {
+      const image = document.getElementById("image");
+      image.style.display = "block";
+      image.src = URL.createObjectURL(event.target.files[0]);
+
+      image.onload = async function () {
+        try {
+          const prediction = await model.predict(image);
+          prediction.sort((a, b) => b.probability - a.probability);
+          const resultText = "Prediction: " + prediction[0].className + 
+                             " (" + (prediction[0].probability * 100).toFixed(1) + "%)";
+          document.getElementById("label").innerText = resultText;
+        } catch (err) {
+          document.getElementById("label").innerText = "Prediction failed.";
+          console.error(err);
+        }
+      };
+    }
+
+    window.addEventListener('load', loadModel);
+  </script>
+</body>
+</html>
